@@ -68,9 +68,10 @@ type ProgressEvent struct {
 type item struct {
 	Idx  int
 	URL  string
-	Type string
-	Size int64
-	Ext  string
+	Type      string
+	Size      int64
+	Ext       string
+	CreatedAt string
 }
 
 func DownloadAllCycles(cl *http.Client, cf *config.EssentialsConfig, ms []scraper.Media, opt Options) (Summary, error) {
@@ -96,7 +97,7 @@ func DownloadAllCycles(cl *http.Client, cf *config.EssentialsConfig, ms []scrape
 			continue
 		default:
 			ext := httpx.InferExt("", v.URL, v.Type)
-			it = append(it, item{Idx: v.Index, URL: v.URL, Type: v.Type, Size: v.Size, Ext: ext})
+			it = append(it, item{Idx: v.Index, URL: v.URL, Type: v.Type, Size: v.Size, Ext: ext, CreatedAt: v.CreatedAt})
 		}
 	}
 	if len(it) == 0 {
@@ -256,6 +257,9 @@ func doOne(cl *http.Client, cf *config.EssentialsConfig, it item, ds bins, opt O
 		base = sh(it.URL)
 	}
 	base = utils.SanitizeFilename(base)
+	if it.CreatedAt != "" {
+		base = it.CreatedAt + "_" + base
+	}
 	if opt.DryRun || opt.MediaMaxBytes > 0 {
 		_, sz, _, st, err := httpx.Head(cl, it.URL, cf.X.Network)
 		if err != nil {
@@ -282,6 +286,7 @@ func doOne(cl *http.Client, cf *config.EssentialsConfig, it item, ds bins, opt O
 	}
 	full := filepath.Join(dst, fn)
 	if st, err := os.Stat(full); err == nil && st.Size() > 0 {
+		setFileTime(full, it.CreatedAt)
 		return result{skipped: true, size: st.Size()}
 	}
 	req, err := http.NewRequest(http.MethodGet, it.URL, nil)
@@ -304,6 +309,7 @@ func doOne(cl *http.Client, cf *config.EssentialsConfig, it item, ds bins, opt O
 	for i := 0; i < at; i++ {
 		n, st, last = httpx.DownloadToFileWithTimeout(cl, req, full, opt.MediaMaxBytes, to)
 		if last == nil {
+			setFileTime(full, it.CreatedAt)
 			return result{ok: true, size: n}
 		}
 		if isTemp(last) {
@@ -423,5 +429,17 @@ func waitDurationWithControls(d time.Duration, opt Options) error {
 			return nil
 		}
 		time.Sleep(tick)
+	}
+}
+
+func setFileTime(p, createdAt string) {
+	if createdAt == "" {
+		return
+	}
+	if t, err := time.Parse("20060102_150405", createdAt); err == nil {
+		if strings.HasSuffix(strings.ToLower(p), ".mp4") {
+			_ = patchMP4Times(p, t)
+		}
+		_ = setCreationAndModificationTime(p, t)
 	}
 }

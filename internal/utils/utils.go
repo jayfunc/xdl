@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -54,4 +55,20 @@ func PromptYesNoDefaultYes(question string) bool {
 	line, _ := reader.ReadString('\n')
 	line = strings.TrimSpace(strings.ToLower(line))
 	return line == "" || line == "y" || line == "yes"
+}
+
+func OpenBrowser(url string) error {
+	var cmd string
+	var args []string
+
+	switch {
+	case strings.Contains(strings.ToLower(os.Getenv("OS")), "windows"):
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	default:
+		// Not important for windows
+		return fmt.Errorf("unsupported platform")
+	}
+	args = append(args, url)
+	return exec.Command(cmd, args...).Start()
 }

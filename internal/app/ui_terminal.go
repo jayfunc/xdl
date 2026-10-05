@@ -14,7 +14,10 @@ import (
 	"github.com/ghostlawless/xdl/internal/utils"
 )
 
-func newSpinnerForUser(_ RunContext, label string) *spinner {
+func newSpinnerForUser(r0 RunContext, label string) *spinner {
+	if r0.Mode != ModeVerbose {
+		return nil
+	}
 	return startSpinner(label)
 }
 
@@ -32,20 +35,9 @@ func prepareRunOutputDir(r0 RunContext, _ *config.EssentialsConfig, u0 string, _
 		return "", e0
 	}
 
-	if utils.DirExists(p0) {
-		i0 := 1
-		for {
-			n1 := fmt.Sprintf("%s_%03d", u0, i0)
-			p1 := filepath.Join(r0.OutRoot, n1)
-			if !utils.DirExists(p1) {
-				p0 = p1
-				break
-			}
-			i0++
-			if i0 > 9999 {
-				return "", fmt.Errorf("Could not create a new output folder for @%s (too many existing runs).", u0)
-			}
-		}
+	// Use the same folder to allow updating/resuming
+	if !utils.DirExists(p0) {
+		// Just a check to create it if it doesn't exist, which EnsureDir does anyway
 	}
 
 	if e1 := utils.EnsureDir(p0); e1 != nil {

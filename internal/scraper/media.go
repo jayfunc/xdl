@@ -18,9 +18,10 @@ import (
 )
 
 type Media struct {
-	URL     string `json:"url"`
-	Type    string `json:"type"`
-	TweetID string `json:"tweet_id,omitempty"`
+	URL       string `json:"url"`
+	Type      string `json:"type"`
+	TweetID   string `json:"tweet_id,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
 }
 
 type PageHandler func(page int, cursor string, medias []Media) error

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"strings"
+	"time"
 )
 
 func fold(b []byte) ([]Media, error) {
@@ -15,16 +16,28 @@ func fold(b []byte) ([]Media, error) {
 	out := make([]Media, 0, 64)
 	seen := make(map[string]struct{}, 64)
 
-	collectMedia(root, "", &out, seen)
+	collectMedia(root, "", "", &out, seen)
 
 	return out, nil
 }
 
-func collectMedia(v any, currentTweetID string, out *[]Media, seen map[string]struct{}) {
+func collectMedia(v any, currentTweetID string, currentCreatedAt string, out *[]Media, seen map[string]struct{}) {
 	switch t := v.(type) {
 	case map[string]any:
 		if id, ok := t["rest_id"].(string); ok && id != "" {
 			currentTweetID = id
+		}
+		if ca, ok := t["created_at"].(string); ok && ca != "" {
+			if pt, err := time.Parse(time.RubyDate, ca); err == nil {
+				currentCreatedAt = pt.Format("20060102_150405")
+			}
+		}
+		if legacy, ok := t["legacy"].(map[string]any); ok {
+			if ca, ok := legacy["created_at"].(string); ok && ca != "" {
+				if pt, err := time.Parse(time.RubyDate, ca); err == nil {
+					currentCreatedAt = pt.Format("20060102_150405")
+				}
+			}
 		}
 
 		if rawURL, ok := t["media_url_https"]; ok {
@@ -56,9 +69,10 @@ func collectMedia(v any, currentTweetID string, out *[]Media, seen map[string]st
 					if _, dup := seen[urlStr]; !dup {
 						seen[urlStr] = struct{}{}
 						*out = append(*out, Media{
-							URL:     urlStr,
-							Type:    mediaType,
-							TweetID: currentTweetID,
+							URL:       urlStr,
+							Type:      mediaType,
+							TweetID:   currentTweetID,
+							CreatedAt: currentCreatedAt,
 						})
 					}
 				}
@@ -66,12 +80,12 @@ func collectMedia(v any, currentTweetID string, out *[]Media, seen map[string]st
 		}
 
 		for _, child := range t {
-			collectMedia(child, currentTweetID, out, seen)
+			collectMedia(child, currentTweetID, currentCreatedAt, out, seen)
 		}
 
 	case []any:
 		for _, child := range t {
-			collectMedia(child, currentTweetID, out, seen)
+			collectMedia(child, currentTweetID, currentCreatedAt, out, seen)
 		}
 	}
 }

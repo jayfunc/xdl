@@ -1,4 +1,4 @@
-bin/
+﻿bin/
 dist/
 logs/
 debug/
@@ -6,3 +6,4 @@ xDownloads/
 *.log
 config/cookies.json
 .env
+*.exe

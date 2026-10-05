@@ -113,6 +113,10 @@ func parseArgs(a0 []string, p0 string, p1 []byte) (RunContext, error) {
 		NoDownload: false,
 		DryRun:     false,
 	}
+	
+	if envOut := os.Getenv("XDL_OUTROOT"); envOut != "" {
+		r0.OutRoot = envOut
+	}
 
 	if v1 {
 		r0.Mode = ModeDebug

@@ -26,8 +26,9 @@ type CheckpointItem struct {
 	Index  int              `json:"index"`
 	URL    string           `json:"url"`
 	Type   string           `json:"type"`
-	Status CheckpointStatus `json:"status"`
-	Size   int64            `json:"size"`
+	Status    CheckpointStatus `json:"status"`
+	Size      int64            `json:"size"`
+	CreatedAt string           `json:"created_at,omitempty"`
 }
 
 type Checkpoint struct {
@@ -44,7 +45,7 @@ func NewCheckpoint(user, runID string, medias []scraper.Media) *Checkpoint {
 	t := time.Now().UTC()
 	items := make([]CheckpointItem, len(medias))
 	for i, m := range medias {
-		items[i] = CheckpointItem{Index: i, URL: m.URL, Type: m.Type, Status: CheckpointPending}
+		items[i] = CheckpointItem{Index: i, URL: m.URL, Type: m.Type, Status: CheckpointPending, CreatedAt: m.CreatedAt}
 	}
 	cp := &Checkpoint{
 		Version:   checkpointVersion,

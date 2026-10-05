@@ -47,7 +47,16 @@ func main() {
 		}
 	}()
 
-	if err := app.RunWithArgsAndID(os.Args[1:], id, b); err != nil {
+	args := os.Args[1:]
+	if len(args) > 0 && args[0] == "-gui" {
+		if err := app.StartGUI(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	if err := app.RunWithArgsAndID(args, id, b); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
